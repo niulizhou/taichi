@@ -41,20 +41,30 @@ bool is_representative(uint32 mask, uint64 value) {
 void Pointer_activate(Ptr meta_, Ptr node, int i) {
   auto meta = (StructMeta *)meta_;
   auto num_elements = Pointer_get_num_elements(meta_, node);
-  Ptr lock = node + 8 * i;
-  Ptr volatile *data_ptr = (Ptr *)(node + 8 * (num_elements + i));
+  volatile Ptr lock = node + 8 * i;
+  volatile Ptr *data_ptr = (Ptr *)(node + 8 * (num_elements + i));
 
   if (*data_ptr == nullptr) {
     // The cuda_ calls will return 0 or do noop on CPUs
     u32 mask = cuda_active_mask();
     if (is_representative(mask, (u64)lock)) {
-      locked_task(lock,
-                  [&] {
-                    auto rt = meta->context->runtime;
-                    auto alloc = rt->node_allocators[meta->snode_id];
-                    *data_ptr = alloc->allocate();
-                  },
-                  [&]() { return *data_ptr == nullptr; });
+      locked_task(
+          lock,
+          [&] {
+            auto rt = meta->context->runtime;
+            auto alloc = rt->node_allocators[meta->snode_id];
+            auto snode_id = meta->snode_id;
+            // *data_ptr = alloc->allocate();
+            auto allocated = (u64)alloc->allocate();
+            auto ret =
+                atomic_exchange_u64((u64 *)data_ptr, allocated);
+            /*
+            taichi_printf(
+                rt, "allocating snode %d... %d node %p lock %p allocated %p, exch %p, num_elements %d\n",
+                snode_id, i, node, lock, allocated, ret, num_elements);
+                */
+          },
+          [&]() { return *data_ptr == nullptr; });
     }
     warp_barrier(mask);
   }
