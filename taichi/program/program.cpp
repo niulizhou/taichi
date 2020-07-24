@@ -323,7 +323,7 @@ void Program::initialize_runtime_system(StructCompiler *scomp) {
           "runtime_NodeAllocator_initialize", rt, i, node_size);
       TI_TRACE("Allocating ambient element for snode {} (node size {})",
                snodes[i]->id, node_size);
-      runtime->call<void *, int>("runtime_allocate_ambient", rt, i);
+      runtime->call<void *, int>("runtime_allocate_ambient", rt, i, node_size);
     }
   }
 

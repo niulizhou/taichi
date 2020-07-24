@@ -934,9 +934,13 @@ void runtime_NodeAllocator_initialize(LLVMRuntime *runtime,
       runtime->create<NodeManager>(runtime, node_size, 1024 * 16);
 }
 
-void runtime_allocate_ambient(LLVMRuntime *runtime, int snode_id) {
+void runtime_allocate_ambient(LLVMRuntime *runtime,
+                              int snode_id,
+                              std::size_t size) {
+  // Do not use NodeManager for the ambient node since it will never be garbage
+  // collected.
   runtime->ambient_elements[snode_id] =
-      runtime->node_allocators[snode_id]->allocate();
+      runtime->request_allocate_aligned(size, 128);
 }
 
 void mutex_lock_i32(Ptr mutex) {
