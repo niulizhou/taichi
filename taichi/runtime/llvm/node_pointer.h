@@ -59,10 +59,13 @@ void Pointer_activate(Ptr meta_, Ptr node, int i) {
             auto ret =
                 atomic_exchange_u64((u64 *)data_ptr, allocated);
             /*
-            taichi_printf(
-                rt, "allocating snode %d... %d node %p lock %p allocated %p, exch %p, num_elements %d\n",
-                snode_id, i, node, lock, allocated, ret, num_elements);
-                */
+            if (snode_id == 1) {
+              taichi_printf(
+                  rt, "allocating snode %d... %d node %p lock %p allocated %p, exch %p, num_elements %d\n",
+                  snode_id, i, node, lock, allocated, ret, num_elements);
+              taichi_assert_runtime(rt, ret == 0, "Allocation eeror!\n");
+            }
+            */
           },
           [&]() { return *data_ptr == nullptr; });
     }
@@ -81,7 +84,14 @@ void Pointer_deactivate(Ptr meta, Ptr node, int i) {
       if (data_ptr != nullptr) {
         auto alloc = rt->node_allocators[smeta->snode_id];
         alloc->recycle(data_ptr);
-        // taichi_printf(rt, "deactivating %p\n", data_ptr);
+        /*
+        if (smeta->snode_id == 1) {
+          taichi_printf(
+              rt,
+              "deallocating snode %d... %d node %p lock %p num_elements %d\n",
+              smeta->snode_id, i, node, lock, num_elements);
+        }
+        */
         data_ptr = nullptr;
       }
     });

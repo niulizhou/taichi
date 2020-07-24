@@ -1375,6 +1375,7 @@ void gc_parallel_0(LLVMRuntime *runtime, int snode_id) {
   auto allocated_elements = allocator->allocated_elements;
   using T = NodeManager::list_data_type;
 
+  // Move unused elements to the beginning of the free_list
   int i = linear_thread_idx();
   if (allocated_elements * 2 > free_list_size) {
     // Directly copy. Dst and src does not overlap
@@ -1397,7 +1398,10 @@ void gc_parallel_0(LLVMRuntime *runtime, int snode_id) {
 void gc_parallel_1(LLVMRuntime *runtime, int snode_id) {
   auto allocator = runtime->node_allocators[snode_id];
   auto free_list = allocator->free_list;
-  free_list->clear();
+
+  const i32 num_unused = max_i32(free_list->size() - allocator->allocated_elements, 0);
+  free_list->resize(num_unused);
+
   allocator->allocated_elements = 0;
   allocator->recycle_list_size_backup = allocator->recycled_list->size();
   allocator->recycled_list->clear();
