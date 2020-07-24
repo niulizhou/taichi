@@ -12,6 +12,7 @@ i32 Pointer_get_num_elements(Ptr meta, Ptr node) {
 }
 
 bool is_representative(uint32 mask, uint64 value) {
+#if defined(ARCH_cuda)
   // If many threads in the mask share the same value, simply
   // elect one thread to return true and let others return false.
   if (cuda_compute_capability() < 70) {
@@ -32,6 +33,9 @@ bool is_representative(uint32 mask, uint64 value) {
     auto leader = cttz_i32(equiv_mask);
     return warp_idx() == leader;
   }
+#else
+  return true;
+#endif
 }
 
 void Pointer_activate(Ptr meta_, Ptr node, int i) {
